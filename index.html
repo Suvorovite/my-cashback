@@ -290,7 +290,15 @@ function render() {
   const query = editing ? "" : $("categorySearch").value.trim().toLocaleLowerCase("ru");
   let matches = 0;
 
-  data.forEach((bank, bi) => {
+  const displayBanks = data.map((bank, bi) => ({bank, bi}));
+  if (!editing && query) {
+    const bestPercent = bank => Math.max(-1, ...bank.categories
+      .filter(([name]) => String(name).toLocaleLowerCase("ru").includes(query))
+      .map(([, percent]) => Number.parseFloat(String(percent).replace(",", ".")) || 0));
+    displayBanks.sort((a, b) => bestPercent(b.bank) - bestPercent(a.bank));
+  }
+
+  displayBanks.forEach(({bank, bi}) => {
     const visibleCategories = editing ? bank.categories : bank.categories.filter(([name]) =>
       String(name).toLocaleLowerCase("ru").includes(query)
     );
