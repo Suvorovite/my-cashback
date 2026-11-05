@@ -1,0 +1,489 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Мой кешбэк</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  color: #f5f1ec;
+  background:
+    radial-gradient(ellipse at 85% 0%, #684735, transparent 50%),
+    linear-gradient(145deg, #242428, #101013 75%);
+}
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 35px 20px;
+}
+h1 { font-size: 34px; margin: 0 0 8px; }
+.month { color: #c49a7a; margin-bottom: 30px; }
+.banks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.bank {
+  padding: 25px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.bank h2 { color: #d9aa83; margin: 0 0 18px; }
+.category {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.category:last-child { border-bottom: none; }
+.percent { font-weight: bold; color: #e6b58e; }
+button {
+  padding: 13px 22px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c99470, #936044);
+  color: #171315;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+button:hover { filter: brightness(1.1); }
+button:focus-visible, input:focus-visible {
+  outline: 2px solid #e6b58e;
+  outline-offset: 2px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+.secondary {
+  background: rgba(255,255,255,0.12);
+  color: #f5f1ec;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.danger { color: #ffd0c8; }
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.22);
+  color: white;
+  font: inherit;
+}
+.bank-name { margin-bottom: 16px; font-size: 19px; }
+.edit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 75px 40px;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.small-button { padding: 9px; }
+.percent-button { padding: 10px 5px; }
+.add-category { margin-top: 10px; }
+.hidden { display: none !important; }
+.empty { color: #c8b9ae; }
+
+/* Барабан */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+}
+.picker-panel {
+  width: min(340px, 100%);
+  padding: 26px;
+  text-align: center;
+  border-radius: 26px;
+  background: linear-gradient(145deg, #403630, #1b1b20);
+  border: 1px solid rgba(220,170,125,0.35);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+}
+.picker-panel h2 { margin: 0 0 8px; }
+.picker-panel p { color: #c8b9ae; }
+.wheel-wrap {
+  position: relative;
+  width: 180px;
+  margin: 22px auto;
+}
+.wheel {
+  height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  touch-action: pan-y;
+}
+.wheel::-webkit-scrollbar { display: none; }
+.wheel-item {
+  height: 44px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: center;
+  font-size: 21px;
+  color: #9f9792;
+  cursor: pointer;
+  user-select: none;
+}
+.wheel-item.selected {
+  color: #efbd94;
+  font-size: 29px;
+  font-weight: bold;
+}
+.wheel-highlight {
+  position: absolute;
+  top: 88px;
+  left: 0;
+  right: 0;
+  height: 44px;
+  border-top: 1px solid #bb8967;
+  border-bottom: 1px solid #bb8967;
+  background: rgba(195,139,96,0.1);
+  pointer-events: none;
+  border-radius: 8px;
+}
+.picker-actions {
+  display: flex;
+  gap: 10px;
+}
+.picker-actions button { flex: 1; }
+@media (max-width: 650px) {
+  .banks { grid-template-columns: 1fr; }
+  .container { padding: 25px 16px; }
+  .bank { padding: 20px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Мой кешбэк</h1>
+    <div class="month" id="month"></div>
+  </header>
+
+  <main class="banks" id="banks"></main>
+
+  <div class="actions" id="viewActions">
+    <button id="editButton">Редактировать</button>
+  </div>
+
+  <div class="actions hidden" id="editActions">
+    <button id="addBank">+ Добавить банк</button>
+    <button id="saveButton">Сохранить</button>
+    <button class="secondary" id="cancelButton">Отмена</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="pickerModal">
+  <div class="picker-panel" role="dialog"
+       aria-modal="true" aria-labelledby="pickerTitle">
+    <h2 id="pickerTitle">Выбор кешбэка</h2>
+    <p>Прокрути барабан до нужного процента</p>
+    <div class="wheel-wrap">
+      <div class="wheel-highlight"></div>
+      <div class="wheel" id="wheel"></div>
+    </div>
+    <div class="picker-actions">
+      <button class="secondary" id="pickerCancel">Отмена</button>
+      <button id="pickerDone">Готово</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const initialBanks = [
+  { name: "Т-Банк", categories: [
+    ["Супермаркеты","5%"], ["Аптеки","7%"],
+    ["Такси","3%"], ["Остальные покупки","1%"]
+  ]},
+  { name: "Альфа-Банк", categories: [
+    ["Рестораны","5%"], ["АЗС","7%"],
+    ["Развлечения","10%"], ["Остальные покупки","1%"]
+  ]},
+  { name: "ВТБ", categories: [
+    ["Супермаркеты","3%"], ["Транспорт","5%"],
+    ["Одежда","7%"], ["Аптеки","2%"]
+  ]},
+  { name: "Сбер", categories: [
+    ["Кафе","5%"], ["Такси","4%"],
+    ["АЗС","3%"], ["Супермаркеты","2%"]
+  ]},
+  { name: "Газпромбанк", categories: [
+    ["Маркетплейсы","6%"], ["Аптеки","5%"],
+    ["Рестораны","4%"], ["Остальные покупки","1%"]
+  ]}
+];
+
+const storageKey = "myCashbackBanksV1";
+const clone = data => JSON.parse(JSON.stringify(data));
+const $ = id => document.getElementById(id);
+
+function loadBanks() {
+  try {
+    const saved = localStorage.getItem(storageKey);
+    if (saved !== null) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (error) {
+    console.warn("Ошибка чтения данных", error);
+  }
+  return clone(initialBanks);
+}
+
+let banks = loadBanks();
+let draft = null;
+let editing = false;
+
+$("month").textContent =
+  new Date().toLocaleDateString("ru-RU", {
+    month: "long", year: "numeric"
+  });
+
+function el(tag, className = "", text) {
+  const node = document.createElement(tag);
+  node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function render() {
+  $("banks").replaceChildren();
+  $("viewActions").classList.toggle("hidden", editing);
+  $("editActions").classList.toggle("hidden", !editing);
+
+  const data = editing ? draft : banks;
+
+  if (!data.length) {
+    $("banks").appendChild(el("p", "empty", "Банков пока нет."));
+  }
+
+  data.forEach((bank, bi) => {
+    const card = el("section", "bank");
+
+    if (editing) {
+      const name = el("input", "bank-name");
+      name.value = bank.name;
+      name.placeholder = "Название банка";
+      name.setAttribute("aria-label", "Название банка");
+      name.oninput = () => bank.name = name.value;
+      card.appendChild(name);
+
+      bank.categories.forEach((category, ci) => {
+        const row = el("div", "edit-row");
+
+        const categoryInput = el("input");
+        categoryInput.value = category[0];
+        categoryInput.placeholder = "Категория";
+        categoryInput.setAttribute("aria-label", "Категория");
+        categoryInput.oninput = () => {
+          category[0] = categoryInput.value;
+        };
+
+        const percent = el(
+          "button", "percent-button", category[1] || "0%"
+        );
+        percent.type = "button";
+        percent.onclick = () => openPicker(bi, ci);
+
+        const remove = el("button", "secondary small-button danger", "×");
+        remove.type = "button";
+        remove.setAttribute("aria-label", "Удалить категорию");
+        remove.onclick = () => {
+          bank.categories.splice(ci, 1);
+          render();
+        };
+
+        row.append(categoryInput, percent, remove);
+        card.appendChild(row);
+      });
+
+      const add = el("button", "secondary add-category", "+ Категория");
+      add.onclick = () => {
+        bank.categories.push(["", "0%"]);
+        render();
+      };
+
+      const removeBank = el("button", "secondary danger", "Удалить банк");
+      removeBank.style.margin = "10px 0 0 10px";
+      removeBank.onclick = () => {
+        if (confirm("Удалить этот банк?")) {
+          draft.splice(bi, 1);
+          render();
+        }
+      };
+
+      card.append(add, removeBank);
+    } else {
+      card.appendChild(el("h2", "", bank.name));
+      bank.categories.forEach(([name, percent]) => {
+        const row = el("div", "category");
+        row.append(el("span", "", name), el("span", "percent", percent));
+        card.appendChild(row);
+      });
+    }
+
+    $("banks").appendChild(card);
+  });
+}
+
+$("editButton").onclick = () => {
+  draft = clone(banks);
+  editing = true;
+  render();
+};
+
+$("addBank").onclick = () => {
+  draft.push({name: "", categories: [["", "0%"]]});
+  render();
+};
+
+$("cancelButton").onclick = () => {
+  draft = null;
+  editing = false;
+  render();
+};
+
+$("saveButton").onclick = () => {
+  const cleaned = draft.map(bank => ({
+    name: bank.name.trim(),
+    categories: bank.categories
+      .map(([name, percent]) => [name.trim(), percent.trim()])
+      .filter(([name, percent]) => name && percent)
+  })).filter(bank => bank.name);
+
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(cleaned));
+  } catch (error) {
+    alert("Не удалось сохранить данные в браузере.");
+    return;
+  }
+
+  banks = cleaned;
+  draft = null;
+  editing = false;
+  render();
+};
+
+/* Барабан процентов */
+const wheel = $("wheel");
+const itemHeight = 44;
+let selectedPercent = 0;
+let pickerTarget = null;
+let scrollTimer = null;
+let previousFocus = null;
+
+function setSelected(value, smooth = false) {
+  selectedPercent = Math.max(0, Math.min(100, Math.round(value)));
+  wheel.scrollTo({
+    top: selectedPercent * itemHeight,
+    behavior: smooth ? "smooth" : "instant"
+  });
+  wheel.querySelectorAll(".wheel-item").forEach((item, i) => {
+    item.classList.toggle("selected", i === selectedPercent);
+    item.setAttribute("aria-selected", String(i === selectedPercent));
+  });
+}
+
+function openPicker(bi, ci) {
+  pickerTarget = [bi, ci];
+  previousFocus = document.activeElement;
+  const raw = String(draft[bi].categories[ci][1]);
+  const value = Number.parseInt(raw, 10);
+  $("pickerModal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  setSelected(Number.isFinite(value) ? value : 0);
+  $("pickerDone").focus();
+}
+
+function closePicker() {
+  clearTimeout(scrollTimer);
+  $("pickerModal").classList.add("hidden");
+  document.body.style.overflow = "";
+  pickerTarget = null;
+  if (previousFocus && previousFocus.isConnected) {
+    previousFocus.focus();
+  }
+}
+
+for (let i = 0; i <= 100; i++) {
+  const item = el("div", "wheel-item", i + "%");
+  item.setAttribute("role", "option");
+  item.onclick = () => setSelected(i, true);
+  wheel.appendChild(item);
+}
+
+/* Пустое пространство сверху и снизу,
+   чтобы крайние числа попадали в центр. */
+wheel.style.paddingTop = "88px";
+wheel.style.paddingBottom = "88px";
+
+wheel.addEventListener("scroll", () => {
+  selectedPercent = Math.max(
+    0, Math.min(100, Math.round(wheel.scrollTop / itemHeight))
+  );
+  wheel.querySelectorAll(".wheel-item").forEach((item, i) => {
+    item.classList.toggle("selected", i === selectedPercent);
+  });
+
+  clearTimeout(scrollTimer);
+  scrollTimer = setTimeout(() => {
+    setSelected(selectedPercent, true);
+  }, 120);
+});
+
+wheel.addEventListener("wheel", event => {
+  event.preventDefault();
+  clearTimeout(scrollTimer);
+  setSelected(
+    selectedPercent + (event.deltaY > 0 ? 1 : -1),
+    false
+  );
+}, {passive: false});
+
+$("pickerCancel").onclick = closePicker;
+
+$("pickerDone").onclick = () => {
+  if (!pickerTarget) return;
+  const [bi, ci] = pickerTarget;
+  draft[bi].categories[ci][1] = selectedPercent + "%";
+  closePicker();
+  render();
+};
+
+$("pickerModal").addEventListener("click", event => {
+  if (event.target === $("pickerModal")) closePicker();
+});
+
+document.addEventListener("keydown", event => {
+  if ($("pickerModal").classList.contains("hidden")) return;
+  if (event.key === "Escape") closePicker();
+  if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+    event.preventDefault();
+    setSelected(selectedPercent + (event.key === "ArrowDown" ? 1 : -1));
+  }
+});
+
+render();
+</script>
+</body>
+</html>
