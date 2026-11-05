@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "my-cashback-v1";
+const CACHE_NAME = "my-cashback-v2";
 
 const FILES_TO_CACHE = [
   "./",
