@@ -496,7 +496,7 @@ function validBackup(value) {
       Array.isArray(category) && category.length === 2 &&
       typeof category[0] === "string" && category[0].length <= 300 &&
       typeof category[1] === "string" &&
-      /^(100|[1-9]?\\d)%$/.test(category[1])
+      /^(100|[1-9]?\d)%$/.test(category[1])
     )
   );
 }
