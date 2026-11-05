@@ -83,6 +83,8 @@ input {
   color: white;
   font: inherit;
 }
+.search-box { margin: 0 0 22px; }
+.search-box input { padding: 15px 18px; border-radius: 15px; background: rgba(255,255,255,0.08); }
 .bank-name { margin-bottom: 16px; font-size: 19px; }
 .edit-row {
   display: grid;
@@ -180,6 +182,10 @@ input {
     <div class="month" id="month"></div>
   </header>
 
+  <div class="search-box" id="searchBox">
+    <input id="categorySearch" type="search" placeholder="Найти категорию, например Аптеки" aria-label="Поиск по категориям" autocomplete="off">
+  </div>
+
   <main class="banks" id="banks"></main>
 
   <div class="actions" id="viewActions">
@@ -273,6 +279,7 @@ function render() {
   $("banks").replaceChildren();
   $("viewActions").classList.toggle("hidden", editing);
   $("editActions").classList.toggle("hidden", !editing);
+  $("searchBox").classList.toggle("hidden", editing);
 
   const data = editing ? draft : banks;
 
@@ -280,7 +287,15 @@ function render() {
     $("banks").appendChild(el("p", "empty", "Банков пока нет."));
   }
 
+  const query = editing ? "" : $("categorySearch").value.trim().toLocaleLowerCase("ru");
+  let matches = 0;
+
   data.forEach((bank, bi) => {
+    const visibleCategories = editing ? bank.categories : bank.categories.filter(([name]) =>
+      String(name).toLocaleLowerCase("ru").includes(query)
+    );
+    if (!editing && query && visibleCategories.length === 0) return;
+    matches += visibleCategories.length;
     const card = el("section", "bank");
 
     if (editing) {
@@ -338,7 +353,7 @@ function render() {
       card.append(add, removeBank);
     } else {
       card.appendChild(el("h2", "", bank.name));
-      bank.categories.forEach(([name, percent]) => {
+      visibleCategories.forEach(([name, percent]) => {
         const row = el("div", "category");
         row.append(el("span", "", name), el("span", "percent", percent));
         card.appendChild(row);
@@ -347,7 +362,12 @@ function render() {
 
     $("banks").appendChild(card);
   });
+  if (!editing && query && matches === 0) {
+    $("banks").appendChild(el("p", "empty", "Категории не найдены. Попробуй другой запрос."));
+  }
 }
+
+$("categorySearch").addEventListener("input", render);
 
 $("editButton").onclick = () => {
   draft = clone(banks);
